@@ -1,36 +1,532 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>entropy</title>
+<title>Landon Harris | entropy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter+Tight:wght@400;500;600&family=Pinyon+Script&display=swap" rel="stylesheet">
 <style>
-  body { margin: 0; background: #fff; color: #000; font-family: Georgia, serif; }
-  #banner { text-align: center; padding: 40px 20px 10px; cursor: pointer; }
-  #banner img { width: 90%; max-width: 900px; height: auto; }
-  nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; padding: 20px; }
-  nav a { color: #000; text-decoration: none; font-variant: small-caps; letter-spacing: 2px; font-size: 20px; }
-  nav a:hover { text-decoration: underline; }
+  /* Light (off-white) is the default. Dark slate is the same style, inverted. */
+  :root {
+    --paper: #f2f2f0;
+    --paper-rgb: 242, 242, 240;
+    --ink: #151515;
+    --ink-rgb: 21, 21, 21;
+    --grey: #84847f;
+    --line: rgba(21, 21, 21, 0.14);
+    --hover-bg: #4a4a48;
+    --hover-fg: #f2f2f0;
+    --logo-filter: none;
+    --cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='25' height='25' viewBox='0 0 25 25'%3E%3Cpath d='M12.5 1v23M1 12.5h23' stroke='%23151515' stroke-width='1.5' fill='none'/%3E%3C/svg%3E") 12 12, crosshair;
+    --bar: 60px;
+    --pad: 24px;
+  }
+  :root[data-theme="dark"] {
+    --paper: #2e3338;
+    --paper-rgb: 46, 51, 56;
+    --ink: #ecece8;
+    --ink-rgb: 236, 236, 232;
+    --grey: #8f959b;
+    --line: rgba(236, 236, 232, 0.16);
+    --hover-bg: #c9cac7;
+    --hover-fg: #26292d;
+    --logo-filter: invert(1);
+    --cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='25' height='25' viewBox='0 0 25 25'%3E%3Cpath d='M12.5 1v23M1 12.5h23' stroke='%23ecece8' stroke-width='1.5' fill='none'/%3E%3C/svg%3E") 12 12, crosshair;
+  }
+  * { box-sizing: border-box; }
+
+  /* Plus-sign crosshair cursor everywhere (hotspot at the centre). */
+  html, body, a, button { cursor: var(--cursor); }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 14px; -webkit-font-smoothing: antialiased;
+    transition: background-color 0.6s ease, color 0.6s ease;
+  }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+
+  /* Dot grid background (reacts to the cursor) */
+  #grid { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; }
+
+  /* Semi-transparent top banner */
+  header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 10; height: var(--bar);
+    display: grid; grid-template-columns: repeat(4, 1fr); align-items: center; column-gap: 24px;
+    padding: 0 var(--pad);
+    background: rgba(var(--paper-rgb), 0.6);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line);
+    transition: background-color 0.6s ease;
+  }
+  #logo { justify-self: start; height: 24px; padding: 0; border: 0; background: none; display: block; }
+  #logo img { height: 100%; width: auto; display: block; filter: var(--logo-filter); }
+  .meta { font-size: 12.5px; line-height: 1.35; }
+  .meta .lbl { display: block; color: var(--grey); font-size: 12px; }
+
+  /* Navigation column: hint until the logo is clicked, then the tabs */
+  .navcol { display: grid; justify-self: end; text-align: right; }
+  .navcol > * { grid-area: 1 / 1; transition: opacity 0.2s; }
+  .navcol .hint { opacity: 1; }
+  nav { display: flex; justify-content: flex-end; gap: 18px; opacity: 0; visibility: hidden; transition: opacity 0.2s, visibility 0s 0.2s; }
+  .navcol.open .hint { opacity: 0; }
+  .navcol.open nav { opacity: 1; visibility: visible; transition: opacity 0.2s; }
+  nav a { color: var(--ink); text-decoration: none; font-size: 12.5px; font-weight: 500; border-bottom: 1px solid transparent; }
+  nav a:hover { border-bottom-color: var(--ink); }
+
+  main { position: relative; z-index: 1; }
+  section, .hero { scroll-margin-top: var(--bar); }
+
+  /* Link boxes: sharp, dots show through, turn dark gray on hover */
+  .btn {
+    display: inline-block; padding: 10px 16px; border: 1px solid var(--ink);
+    color: var(--ink); text-decoration: none; font-size: 13px; font-weight: 500;
+    background: rgba(var(--paper-rgb), 0.5);
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .btn:hover { background: var(--hover-bg); color: var(--hover-fg); border-color: var(--hover-bg); }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 12px; }
+
+  /* Hero */
+  .hero {
+    position: relative; overflow: hidden; min-height: 100vh;
+    padding: calc(var(--bar) + 16px) var(--pad) 22px;
+    display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  /* Clouds from the LinkedIn cover, in black and off-white */
+  .clouds {
+    position: absolute; top: var(--bar); left: 0; width: 100%; height: 36vh; z-index: 0;
+    object-fit: cover; object-position: center; pointer-events: none;
+    -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent);
+    mask-image: linear-gradient(to bottom, #000 50%, transparent);
+  }
+  #face {
+    position: absolute; left: 50%; bottom: 9vh; transform: translateX(-50%);
+    width: min(54vh, 46vw, 500px); aspect-ratio: 1; z-index: 1;
+  }
+  .intro {
+    position: relative; z-index: 2;
+    display: flex; justify-content: space-between; align-items: flex-end; gap: 24px;
+    margin-bottom: 8px;
+  }
+  .intro p { margin: 0; max-width: 34ch; font-size: 14px; line-height: 1.4; letter-spacing: -0.01em; }
+  .intro p span { color: var(--grey); }
+
+  /* Name: cursive, all caps, fitted to the full width by script */
+  #name {
+    position: relative; z-index: 2; align-self: flex-start;
+    display: inline-block; white-space: nowrap; margin: 0; padding: 0 0.08em 0.1em;
+    font-family: "Pinyon Script", "Snell Roundhand", "Apple Chancery", cursive;
+    font-weight: 400; text-transform: uppercase;
+    font-size: 11vw; line-height: 1.05; letter-spacing: 0;
+    -webkit-text-stroke: 0.4px currentColor;
+  }
+
+  /* Sections are transparent so the dot grid shows through everywhere */
+  section { position: relative; padding: 96px var(--pad); border-top: 1px solid var(--line); }
+  .head { display: grid; grid-template-columns: 1fr 2fr; gap: 24px; margin-bottom: 32px; }
+  .head h2 { margin: 0; font-size: 13px; font-weight: 600; }
+  .head p { margin: 0; color: var(--grey); font-size: 13px; }
+  .stub { min-height: 70vh; }
+
+  /* Dictionary entry */
+  #def { padding-top: 120px; padding-bottom: 120px; }
+  .entry {
+    max-width: 560px; margin: 0 auto;
+    font-family: "EB Garamond", Garamond, "Times New Roman", serif;
+    font-size: 18px; line-height: 1.45;
+  }
+  .entry p { margin: 0 0 10px; }
+  .entry .hw { font-weight: 500; }
+  .entry .pron { color: var(--grey); }
+  .entry ol { margin: 0 0 12px; padding: 0 0 0 1.4em; }
+  .entry li { margin-bottom: 8px; padding-left: 4px; }
+  .entry .ety { color: var(--grey); font-size: 16px; margin-bottom: 0; }
+
+  /* About */
+  .about-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 24px; }
+  .about-title { margin: 0; font-size: 13px; font-weight: 600; }
+  .block { margin-bottom: 48px; }
+  .block h3 { margin: 0 0 12px; color: var(--grey); font-size: 12px; font-weight: 500; }
+  .block > p { margin: 0; font-size: clamp(15px, 1.4vw, 18px); line-height: 1.45; letter-spacing: -0.01em; max-width: 38em; }
+
+  /* Experience, in the LinkedIn pattern */
+  .xp { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--ink); }
+  .xp li { display: grid; grid-template-columns: 44px 1fr; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+  .xp .tile {
+    width: 40px; height: 40px; display: grid; place-items: center;
+    border: 1px solid var(--line); font-size: 12px; font-weight: 600; letter-spacing: -0.02em;
+  }
+  .xp .co { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+  .xp .ti { color: var(--grey); font-size: 13px; margin-bottom: 8px; }
+  .xp .ln { display: grid; grid-template-columns: 62px 1fr; gap: 12px; font-size: 13px; line-height: 1.45; margin-top: 4px; max-width: 62ch; }
+  .xp .k { color: var(--grey); }
+
+  footer {
+    position: relative; z-index: 1; border-top: 1px solid var(--line);
+    display: flex; justify-content: space-between; gap: 12px; padding: 20px var(--pad); font-size: 13px;
+  }
+  footer a { color: var(--ink); }
+
+  @media (max-width: 760px) {
+    :root { --pad: 16px; --bar: 52px; }
+    header { display: flex; justify-content: space-between; }
+    #logo { height: 20px; }
+    .meta:not(.navcol) { display: none; }
+    .clouds { height: 30vh; }
+    #face { width: 78vw; bottom: 14vh; }
+    .intro { flex-direction: column; align-items: flex-start; gap: 14px; }
+    .head, .about-grid { grid-template-columns: 1fr; gap: 12px; }
+  }
+  @media (hover: none) { html, body, a, button { cursor: auto; } }
+  @media (prefers-reduced-motion: reduce) { body, header, .navcol > *, nav { transition: none; } }
 </style>
 </head>
 <body>
-  <div id="banner"><img src="entropy-logo.jpeg" alt="entropy"></div>
-  <nav id="nav">
-    <a href="#">home</a>
-    <a href="#">what's new?</a>
-    <a href="#">projects</a>
-    <a href="#">about me</a>
-  </nav>
+  <canvas id="grid" aria-hidden="true"></canvas>
+
+  <header>
+    <button id="logo" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav" title="Menu">
+      <img src="entropy-logo.png" alt="entropy">
+    </button>
+    <div class="meta"><span class="lbl">Currently:</span>Engineering Project Manager, P&amp;G</div>
+    <div class="meta"><span class="lbl">Based in:</span>Santa Monica, CA (<span id="clock">--:--</span>)</div>
+    <div class="meta navcol" id="navcol">
+      <div class="hint"><span class="lbl">Navigation:</span>Click the logo</div>
+      <div>
+        <span class="lbl">Navigation:</span>
+        <nav id="nav">
+          <a href="#top">Home</a>
+          <a href="#new">What's new?</a>
+          <a href="#projects">Projects</a>
+          <a href="#about">About me</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <div class="hero" id="hero">
+      <img class="clouds" src="clouds.png" alt="" aria-hidden="true">
+      <canvas id="face" aria-label="Halftone portrait of Landon Harris" role="img"></canvas>
+      <div class="intro">
+        <p>Engineering project manager working where manufacturing meets design. <span>Founder of ReForm.</span></p>
+        <a class="btn" href="#about">Read about me</a>
+      </div>
+      <h1 id="name">Landon Harris</h1>
+    </div>
+
+    <!-- Dictionary entry -->
+    <section id="def">
+      <div class="entry">
+        <p><span class="hw"><b>en·tro·py</b></span> <span class="pron">(ĕn′trə-pē)</span> <i>n.</i>, <i>pl.</i> <b>-pies</b></p>
+        <ol>
+          <li><i>Physics.</i> A measure of how much of a system's energy is unavailable for doing useful work; in statistical terms, a measure of the number of ways its parts can be arranged. In an isolated system, entropy never decreases.</li>
+          <li><i>Information theory.</i> A measure of the uncertainty or unpredictability of a message or a source of data.</li>
+          <li>A gradual, steady slide from order into disorder.</li>
+          <li>The name of Landon Harris's personal projects and products brand. Click the logo in the upper left to see them.</li>
+        </ol>
+        <p class="pron">—<b>en·tro′pic</b> (ĕn-trō′pĭk) <i>adj.</i></p>
+        <p class="ety">[German <i>Entropie</i>, coined in 1865 by Rudolf Clausius from Greek <i>en-</i>, in + <i>tropē</i>, a turning, transformation.]</p>
+      </div>
+    </section>
+
+    <section class="stub" id="new" data-theme="dark">
+      <div class="head"><h2>What's new?</h2><p>Coming soon.</p></div>
+    </section>
+
+    <section class="stub" id="projects" data-theme="dark">
+      <div class="head"><h2>Projects</h2><p>Coming soon.</p></div>
+    </section>
+
+    <section id="about">
+      <div class="about-grid">
+        <h2 class="about-title">About me</h2>
+        <div>
+          <div class="block">
+            <h3>Interests</h3>
+            <p>I'm interested in creative projects where art, politics and social activism meet. I also love to cook and think a lot about home aesthetics, which pairs well with a career spent designing things to be built.</p>
+          </div>
+
+          <div class="block">
+            <h3>Links</h3>
+            <div class="btn-row">
+              <!-- Put your resume next to index.html as resume.pdf, or change this link -->
+              <a class="btn" href="resume.pdf" target="_blank" rel="noopener">Resume</a>
+              <a class="btn" href="https://www.linkedin.com/in/landoneh/" target="_blank" rel="noopener">LinkedIn</a>
+            </div>
+          </div>
+
+          <div class="block">
+            <h3>Experience</h3>
+            <!-- To use a real company logo, replace a .tile div with: <img class="tile" src="logos/name.png" alt=""> -->
+            <ul class="xp">
+              <li>
+                <div class="tile">P&amp;G</div>
+                <div>
+                  <div class="co">Procter &amp; Gamble</div>
+                  <div class="ti">Engineering Project Manager, Manufacturing &amp; Design</div>
+                  <div class="ln"><span class="k">Impact</span><span>Coordinate multiple complex, multifunctional projects across manufacturing, engineering, HSE and planning, and track spend forecast and actuals monthly for every project.</span></div>
+                  <div class="ln"><span class="k">Learned</span><span>Competing priorities get easier when every team and vendor works from a clear scope of work.</span></div>
+                </div>
+              </li>
+              <li>
+                <div class="tile">T</div>
+                <div>
+                  <div class="co">Tesla</div>
+                  <div class="ti">Manufacturing Design Engineer, Models S &amp; X General Assembly</div>
+                  <div class="ln"><span class="k">Impact</span><span>Worked with the automotive design studio on design-for-manufacturing fixes, including wheel hub scratch loss, A-pillar design losses, the light gate and Falcon Door striker root causes.</span></div>
+                  <div class="ln"><span class="k">Learned</span><span>Design intent has to survive the assembly line, and the line is where you find out if it does.</span></div>
+                </div>
+              </li>
+              <li>
+                <div class="tile">V</div>
+                <div>
+                  <div class="co">Vitesco Technologies</div>
+                  <div class="ti">Electromechanical Engineer</div>
+                  <div class="ln"><span class="k">Impact</span><span>Worked on electromechanical engineering for automotive systems.</span></div>
+                  <div class="ln"><span class="k">Learned</span><span>Mechanical and electrical constraints shape each other inside a single product.</span></div>
+                </div>
+              </li>
+              <li>
+                <div class="tile">R</div>
+                <div>
+                  <div class="co">ReForm</div>
+                  <div class="ti">Founder</div>
+                  <div class="ln"><span class="k">Impact</span><span>Took a modular furniture product from sketches to prototypes, owning craftsmanship, user-perceived quality and budget.</span></div>
+                  <div class="ln"><span class="k">Learned</span><span>People judge quality by feel, and a budget is a design constraint like any other.</span></div>
+                </div>
+              </li>
+              <li>
+                <div class="tile">e</div>
+                <div>
+                  <div class="co">eyevcandles LLC</div>
+                  <div class="ti">Assistant Art Director, since May 2021</div>
+                  <div class="ln"><span class="k">Impact</span><span>Designed labels and logos and produced social video and a digital product portfolio for the two founders.</span></div>
+                  <div class="ln"><span class="k">Learned</span><span>How to turn two founders' taste into one consistent brand.</span></div>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Landon Harris</span>
+    <a href="https://www.linkedin.com/in/landoneh/">LinkedIn</a>
+  </footer>
+
 <script>
-  const nav = document.getElementById('nav');
-  document.getElementById('banner').addEventListener('click', () => {
-    const links = Array.from(nav.children);
-    for (let i = links.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [links[i], links[j]] = [links[j], links[i]];
-    }
-    links.forEach(l => nav.appendChild(l));
+  // Portrait as a 128 x 128 grid of brightness values (0 = black, f = white).
+  // Embedded here so the effect works even when the page is opened from a file.
+  const FN = 128;
+  const FACE = 'eeeeeeeeeeedeeeeeeeeeeeeeededeeeedeeeeeeeeeeeeeeedeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeedeeeeeeeddeeededededdeeeeedededeeededeeeeedddddddedddeeddeeeeeeeeeeeddeeeedeeeeeeeeeddededeeeeeeeeeeeeeeeeeeeeeeeeeedeeeeeeeeeeedeeeeeeeddddedddedddddeeeeedeeeeeededeeeeeeeeeeeeedeeeeeeeeeedeeeeeeeeeeeeeeeeeeeeeedeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeedeeeeededddeeeeeededdedeeeeededeeeeeeeeeedeeeeeeeeeeeeeeedeeeeeeeeeeeeeeedeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeedeeeeeeeeeeeeeeeeeedededeeeededeeededeeeeeeeeeeeeeeedeeeeeeeeeeeeeeedeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeedeeeeedeeeeeeeeedddeedddeeeeeddeeeeeeeedeededddeeeeeeeedeeeeeeeeeeeeeeeeeeeeeeeeeeedeeeeeeeeeeeeeeedeeeeeeeeeeeeeeeeeeeeeedeeeeeeeeeeedeeeeeeededdeeeeedeeeddeeeeeeeeeddeeeedddeeeddeeedeedeeeeeeeeeeeedeeeedeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeedeeeeeedededeeeedeeeeedddedededededeeeeeeeeedeeeedeeeeeddeeeeeeeedeeeeeeeeeedeeeedeeeeeeeeeeeeeeeeeefeeeeeeeeeeeeeeeeeeeeeeeeededeeeeeedeeeeeeedddeeeeddddeeddeeedeeeeeeeeeedeeeeeeeeeedeeeeeeeeeedeeeeeeeeedeeeeeeeeeeeeeeeeeeeeeeefeeeeeeeeeeeeeeeeeeeeeeeeeeeefeeeeedeeeeeeeddeedddddddddeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeefeeffffeeeeeeeeeeeeeeeefeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeedeeeeddeedeeeeeedeeeeeeeededeeeeeeeeeeeeefeeeeeedeeeeeeeeeeeeeeeeeeeeeeefeeeeeeeeeeeefeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeedddddddeeeeeeeeeedeeeeeeeeeeeeeedeeeeeeeeeeeeeeeeeeeedeeeedeeeeeeefeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeedeeeeeeedeeeeeeeeedddedeeeeeeeeeeeedeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeedeeeeeeeffffffffeffefeeeffffeeeeffefeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeddeedeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeffeeeeeedeeeeeeefeeffffefeffffefffffefeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeedeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeefeeeeeeeeeeeeeeefefea6de93b7dffffffffffefffefeefeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeedeeedeeeeeeeeedeeededeeeeeeeeeeeeeeeeeeeeeeeeeeeefeeeeeeeeeeeefefed568c628efffffffffffefffefeffeefeffeeeeeeeeeeeeeedeeeeeeeeeeeedeeedeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeefeefeeeeffffeefefeeeecde8fb248854effffeefdffffefffeefeeefeffeeeeeeeeeeeeeeeeeeeeeeeeeeedeeeeeeeeddeeeeedeeeddeeedeeeeeeeeeeeeeeeeeefeeeefefefeffffcec8aa99b423368bdfedaccaefedfffefeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeedddeeeedddedeeeeeeeeedeeeeeeeeeeeeeeeeeeeeeefffffffffffffeeefeeb79888498687234878b723733ec6affffffffffffffeeeeeeeeeeeeeeefeeeeeeedeeeeeeedeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeefffffffff99ddeda774486475436245324564277be846effffffffffffffeeeefeeeeeeeeefeeeeeeeeeeeeeeeeeeeeeeeeeeedeeefeeeeeeeefeeeeeeffffffffffffffe855d7976854696543322532662538e576216efffffffffffffffeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeefeeeeeeeeeeeeeeefeefefffffffffc863663a96456723124311324563468433324dffeeefdfffffffeefeeeeeeeeeeeeeeeeeeeeeeedeeeeeeefeeeeeffefffffffeeeefffffffffffffffffffffefb82167789446133379536545732344133138adddb64adffffffeeeeefeeeeeeeeeeeeeeeeeeeeeeeeeeefffefefffffeefeffffefeffffffffffffffffff9be9ab84326414482123312693363114672122437578617348fffffffffffeeeefeeefeeeeeeeeeeeeeeeeeeffffffffffffefffffffffffffffffffffe9bfff9476a65345472231322021134554312551431325421688436afefffffffefeeeefeeefeeeeeeeeeeeeeeeeeeffffffffffffeeffffffffffffffffffffeb7eeda6566359734103643313242335454342334222543445344866eeffffffefffffefeeffffeeeeeeeeeeeeeeeeffffffffffffffffffffffffffffffffffff89b841335442374111422536434423223421345662254465556346b7effffffeffeeefefeeeeeeeeeeeeeeeeeeeeffffffffffffffffffffffffffffffffffff62685213333346321011323653323511221344545655362545234517ffefffffefeeefffeeeeeeeeeeeeeeeeeeeeffffffffffeffffffffffffffffffffffdefd366511201432314300643422114221121011223213343224221237bfd6bffffefeefeffefeeeeeeeeeeeeeeeeeefefffefffffffffffffffffffffffffdd557a94971003202422421122332122112012210112122212342232331525642bfffefffeeffffeeeeeeeeeeeeeeeeeefffffffffffffffffffffffffffccea94a826545630123002213420012211211211112000121111111544311253219c8effffffffffffeeeeeeeeeeeeeeeeeeefffffffffffffffffffffffffffc444241743234445101210120100111322210101102000110013201133331212459cffffffffffffffeefeeeeeeeeeeeeeeeeffffffffffffffffffffffffffff75596322245644301311000000101110100000000010000000110134212222446aefffffffffffffeeeeeeeeeeeeeeeeeeeefefffffffffffffffffffffffffff8027534446235452222001010000100101011000000000000001110110222557bdefffffffffefeeeefeeeeeeeeeeeeeeeefeffffffffffffffffffffffffccda514813035322425422000000000120100000010000000000000100110123333479effffffffeffffefeeffeeeeeefeeefefffffffffffffffffffffffffc4334532585662110843300000000000010000002000000000000100000110011356457defffffffffffffffefffeeeeeeeeeeefffeeffffffffffffffffffffd776225341223343121101130000000000000000000000000000001112000001222338995bfffffffffffeeeeffeefeeeeeeeeefffeffffffffffffffffffffffeea643333645851012344100010000000000001000000000000000111000000000344566bdc9dfffffeeffeeffeefeeeeeeeeefffffffffffffffffffffffffffdfd72115614311001111000100000000000000000000000001200110000000000011433344cffffffffffeefffffffeeeeeeeffefffffffffffffffffffffffa67645256234310000000010000000000000000000000000011000021000000000034252233dfffffffffffefffffffeeeeeeeffffffffffffffffffffffffff56255536028120000000000000100000000000000000000001000001310000000001221059aefffffffffffeffffffeeeeeeeeefffffffffffffffffffffffffa443345142200000000000000000000000000000000000000000000022000000000022034145afffffffffffeeeeeeedeeeeefffffffffffffffffffffffffff345466322110000000000000000000000000000000000000000000001130000000000333124bdfffffffffffffffeeeeeeeeeeffffffffffffffffffffffffeea6427411031000000000000000000000000000000000000000000000003100000000121133276effffffffffffffeeeeeeeeffffffffffffffffffffddefeec678463220223100000000000000000000000001123442111000000000001200000000112234748effffffffffffeeeefeffefefffffffffffffffffffb7565335521321542111101000000000000011112223233445443332222200000122000011000012212134affffffffffffeefffefffeefffffffffffffffffffffec34311323211003201100000000001123333565666555554456444442000003100000122310212568b18effffffffffeefeeeeeeeeffffffffffffffffffffffd622423342000010101000000001113444568a6acb866556656655444200001100000001132223245a752efffffffffffefffeeeeeffffffffffffffffffffff7725575221000000000000000002234546779abddcb977788888664443100000001000001111013202ce33cfffffffffeeefeeefeefffffffffffffffffffffe711551201000000000000000002333455777aabbdcba9888988876655320000000000000000012396644b32bfffffffffefffefffefffffffffffffffffffff9631321100100000000000000013444555789bcccccbbaa9998888765544200000000000000000016aa75ffaeffffffffffffeeeffefffffffffffffffffffff932330211100000000000000002344456778abccccccb999999a987665543000000000000000112112bffffffffffffffffeeeeeeefffffffffffffffffffffe20525221001000000000000000233446789abcdcdcccbaaaaaa99997655542000000000000000133126efffffffffffffffefeefeffffffffffffffffffffffe74856410203101000000000000243457899bcdeeedcbbaaaaaaaba98876542000000000000000216c72befffffffffffffffeeefefefffffffffffffffffffffdfef93010010001000000000013345689abccddddccbbbbaaababaa99876531000000000000005108e96dfffffffffffffffffeffffffffffffffffffffffffffffe3000000000000000000002335778abbccddcbbbbbabaaaba998765534420000000000000106128effffffffffffffffffffffffffffffffffffffffffffffffd5100000000000000000013446334466789aa9aaa99aaa986532111111330000000000000000483cfffffffffffffffffffefffffffffffffffffffffffffebe861000000000000000000234421221112124579aaa9a99742110011111122000000000001000218fffffffffffffeefefeffffffffffffffffffffffffff94420100100000000000000002443122233321000256788876311001111112222241000000006230244efffffffffffffffffffffffffffffffffffffffffffb15347200000000000000000003447664321111100114567654121000123342212222321000000600082aeffffffffffffffffffffffffffffffffffffffffff22cffc3012200000000000001222212356654443332001332221014455668868642134410000103000143bffffffffffffffffffffffffffffffffffffffffffeeeff811783000000000000016921468889a644344540011022035443334556874222a91000000001337effffffffffefeefffffffffffffffffffffffffffffffffd21bc92000000000000115823567558ba6211334301102215422332223487333133100000050134dffffffffffffffefffffffeeffffffffffffffffffffffffd22ee820000000000000122146756755520111234012331142337a22243774321320000000340906bfffffffffffffffffeffeeefffffffffffffffffffffffff43ea72000000000000001125664437b83201123200121012336bc44464687321300000000030aa34efffffffffffffeffefeeeeefffffffffffffffffffffffffee534000000000000001225754338cc42121241007a60033336763445788431200000000027fffffffffffffefffeeeefffffffffffffffffffffffffffffffff7561000000000000001315987558898763454104dec6023324567777889632200000000002efffffffffffffffffeeeeffeffffffffffffffffffffffffffffead21000000001220002314aaa777776447842109efd9314444567889999722100000000020dffffffffffffffffffffffffffffffffffffffffffffffffffff9e7101000300023330033329aba9776557645104befea60355567789aaa87111001000200124ffffffffffffffffffffffffffffffffffffffffffffffffffffcc5101001100022343033425bdcdbba86555311abefec95047666789aaba421200000000301bffffffffffffffffffffffeeeeeffffffffffffffffffffffffff810000100000113530445317cedba756676107bceffdb8203687889a9622322000040023107fffffffffffffffffffffffffffffffffffffffffffffffffffff6400000021001156214446413667667664113abefffeda73201222211147441001000211529fffffffffffffffffffffffffffffffffffffffffffffffffffffe710100000000265225555973200000024539bbdefeedba5676555579a87551000010106e60cffffffffffeffffffffffffffefffffffffffffffffffffffffffc1110000000036333555665677667899748ddaabcbbaaba7689989aa997440000060007ffdffffffffffffffffffffffffffeffffffffffffffffffffffffffff30160002010352444666667778999a764cdd979bba99cb8899aaa99888243540030148fffffffffffffffeeffffffffffffeffffffffffffffffffffffffffff23123403000252234665566689aa97664aba4289a9249a8989aaa9887755243010619fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff3011906400024541456566679999888658952348974369aa8aaaa9888754000010c5effffffffffffffffffffffffffffffeffffffffffffffffffffffffffff81397180020053763455666789976778a75434477765579caa9999888662000104f9bffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff80c14400111346544556667888787acc94434577656689bba999887768100162afffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffbebb03531104756444556777678bcccb76565555767889bb9887776750117e9affffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff462d200000676454456677679bbcbbbaab9655676789aa998776655084affffffffffffffffffffffffffffffffffefffffffffffffffffffffffffffffffffff34120313002335444566679aaaaaaaabdca99977777888876666205ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc109a8b440000255544566799aa99aab999bb9789986788776667108fffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffff707fffe5000322555444557889988a87899998777897777766678006ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb1bfffd410043155554455787975665788789989855347766676601dfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffdfffffa103b80545554557776412335566675666522456667778109fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa002e304555555578754467adeecaabcdb98656667777ac158ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe409e30355554556767789bcbdeeedfedba8776566677df612effffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff11cfa644455555666788789aabcdbdbba77876556669fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe80cffe3544544454568886677988899867886656666dffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa07fff6444444444566788656444445567776665669ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffefffff54344444455567776765555567777666666fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff6533444444556778866445557887766565afffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff744334444556778aba8777778887776656afffffffffffffffffffffffffffffffffffffffefffffffffffffffffffffffffffffffffffffffffffffffffffff944423344467789abcbb988998987765569fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa454332334677889bbaaa99999987765669fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa5444332234677898998999998788655569fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa4554433223466777888788888776556668fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb4554443222245556767756766653566667fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb5555544322223445566656654435676767fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb5555544433322233343344333446677766ffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb5556655544433343333234556667677776fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa5566666544433344444455666667777776efffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe75666666655443444555666676667777776dfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff44656666666555444556677766667777777759fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff6055666676666555455567787776777777777507fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb8203666666667666655556667777777788877776107cfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe50000366666767776666555556777777888888777640112afffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc610000036766676777766555656667778888888877764001103dfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff930000000017677677777776666667788887788888887774000000149effffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc311001000000687777777777766667787888888888888876500000011017dfffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffb6111101000000028776676787777666778999878888878887740000000110004bfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe8211111001000000004877777777877777788998878888778887710000000010000039effffffffffffffffffffffffffffffffffffffffffffffffffffffc61111111000000000000057766666777767778788878888877777720000000001100000115aefffffffffffffffffffffffffffffffffffffffffffffffffc5111111011010100000000004776767778777777787888898878887300000000000100000001116cfffffffffffffffffffffefffffffffffffffffffffff9411111110111100000000000000266677777777777788888898888862000000000000110000000011149effffffffffffffffffefffffffffffffffffffff93111111210111011010000000000000467778878777788888899888741000000000000011000000001111128dffffffffffffffffeffffffffffffffffffc7321111111111110010100000000000000013567888777888888988753100000000000000000000000000011111149dffffffffffefeeffffffffffffffffb422111111111101110110100000000000000000013578777878888874100000000000000000001101000000000111111149dffffffeeefeffffffffffffffa3121111111111101110111100100000000000000000000122334332210000000000000000000000011000000000000111111115cffffeefeffffffffffffe8211211111221111011100111110100000000000000000000000000000000000000000000000000000001010000000000001111111138efffffffffffffffb52112211111211111101100111111110001000000000000000000000000000000000000000000000000001000101000000111111111111127bfffffffffffa3211121111221221111111111111101110100110000000000000000000000000000000000000000000000001000111110000111111111111111138efffffe932111121111212122211111001111110111010000000000000000000000000000000000000000000000000000010010101111111111111121111111125ffc73221221211122222221211100111111111111100000010000000000000000000000000000000000000000000000001001111111111111111111111111121f62222222222112222212211111011111111111011011001000100000000000000000000000000000000000000000000001101011111000011111111111111118321222221111221211211111100111111111110001110101000000000000000000000000000000000000000000000000101000011111001011111111111111122221222121122211212121111011111111011110111000111010100000000000000000000000000000000000000000001110100000111111111111111112111';
+
+  let INK = '21,21,21';
+  const TAU = Math.PI * 2;
+  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+  const smooth = t => t * t * (3 - 2 * t);
+
+  function fit(c) {
+    const dpr = window.devicePixelRatio || 1;
+    const w = c.clientWidth, h = c.clientHeight;
+    c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+    const x = c.getContext('2d');
+    x.setTransform(dpr, 0, 0, dpr, 0, 0);
+    x.clearRect(0, 0, w, h);
+    return { x, w, h };
+  }
+  function dot(x, cx, cy, r, a) {
+    if (r < 0.3) return;
+    x.fillStyle = 'rgba(' + INK + ',' + a + ')';
+    x.beginPath(); x.arc(cx, cy, r, 0, TAU); x.fill();
+  }
+
+  // ---------- Cursor trail ("motion blur"): each dot remembers how recently the cursor passed ----------
+  const GAP = 28, R_BG = 90, R_FACE = 110, DECAY = 0.92; // DECAY: closer to 1 = longer trail
+  const bg = document.getElementById('grid');
+  const face = document.getElementById('face');
+  const hero = document.getElementById('hero');
+
+  let bgCols = 0, bgRows = 0, bgHeat = new Float32Array(0);
+  const FH = new Float32Array(FN * FN);                       // heat per portrait cell
+  const FK = Float32Array.from(FACE, c => {                   // base dot size per portrait cell
+    const k = clamp(((15 - parseInt(c, 16)) / 15 - 0.12) / 0.88);
+    return k < 0.03 ? 0 : Math.pow(k, 0.85);
   });
+
+  function sizeBg() {
+    bgCols = Math.ceil(window.innerWidth / GAP);
+    bgRows = Math.ceil(window.innerHeight / GAP);
+    bgHeat = new Float32Array(bgCols * bgRows);
+  }
+
+  function stamp(field, cols, rows, cell, ox, oy, segs, R) {
+    for (const s of segs) {
+      const len = Math.hypot(s.x1 - s.x0, s.y1 - s.y0);
+      const n = Math.max(1, Math.ceil(len / (R * 0.3)));
+      for (let k = 0; k <= n; k++) {
+        const px = s.x0 + (s.x1 - s.x0) * k / n - ox;
+        const py = s.y0 + (s.y1 - s.y0) * k / n - oy;
+        const c0 = Math.max(0, Math.floor((px - R) / cell)), c1 = Math.min(cols - 1, Math.ceil((px + R) / cell));
+        const r0 = Math.max(0, Math.floor((py - R) / cell)), r1 = Math.min(rows - 1, Math.ceil((py + R) / cell));
+        for (let r = r0; r <= r1; r++) {
+          for (let c = c0; c <= c1; c++) {
+            const d = Math.hypot((c + 0.5) * cell - px, (r + 0.5) * cell - py);
+            if (d < R) {
+              const t = smooth(1 - d / R), i = r * cols + c;
+              if (t > field[i]) field[i] = t;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  function decay(field, f) {
+    let max = 0;
+    for (let i = 0; i < field.length; i++) {
+      let v = field[i] * f;
+      if (v < 0.004) v = 0; else if (v > max) max = v;
+      field[i] = v;
+    }
+    return max;
+  }
+
+  function drawBg() {
+    const { x, w, h } = fit(bg);
+    for (let r = 0; r < bgRows; r++) {
+      for (let c = 0; c < bgCols; c++) {
+        const t = bgHeat[r * bgCols + c];
+        dot(x, (c + 0.5) * GAP, (r + 0.5) * GAP, 0.8 + t * 3, (0.14 + t * 0.5).toFixed(3));
+      }
+    }
+  }
+
+  function drawFace() {
+    const { x, w } = fit(face);
+    const cell = w / FN;
+    for (let j = 0; j < FN; j++) {
+      for (let i = 0; i < FN; i++) {
+        const k = FK[j * FN + i];
+        if (!k) continue;
+        const t = FH[j * FN + i];
+        const r = Math.min(k * cell * 0.62 * (1 + 0.5 * t), cell * 0.74);
+        dot(x, (i + 0.5) * cell, (j + 0.5) * cell, r, (0.5 + 0.5 * t).toFixed(3));
+      }
+    }
+  }
+
+  const mouse = { x: 0, y: 0, on: false };
+  let segs = [], running = false, last = 0, lastMove = 0;
+
+  function frame(now) {
+    const dt = Math.min(64, now - last || 16.7);
+    last = now;
+    const f = Math.pow(DECAY, dt / 16.67);
+    const heroRect = hero.getBoundingClientRect();
+    const heroVisible = heroRect.bottom > 0;
+
+    if (mouse.on && now - lastMove < 1200) segs.push({ x0: mouse.x, y0: mouse.y, x1: mouse.x, y1: mouse.y });
+
+    const m1 = decay(bgHeat, f);
+    const m2 = heroVisible ? decay(FH, f) : 0;
+    const had = segs.length > 0;
+
+    stamp(bgHeat, bgCols, bgRows, GAP, 0, 0, segs, R_BG);
+    if (heroVisible) {
+      const rect = face.getBoundingClientRect();
+      stamp(FH, FN, FN, rect.width / FN, rect.left, rect.top, segs, R_FACE);
+    }
+    segs = [];
+
+    drawBg();
+    if (heroVisible) drawFace();
+
+    if (had || m1 > 0.004 || m2 > 0.004) requestAnimationFrame(frame);
+    else running = false;
+  }
+  function kick() {
+    if (running) return;
+    running = true; last = performance.now();
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('mousemove', e => {
+    segs.push({ x0: mouse.on ? mouse.x : e.clientX, y0: mouse.on ? mouse.y : e.clientY, x1: e.clientX, y1: e.clientY });
+    mouse.x = e.clientX; mouse.y = e.clientY; mouse.on = true;
+    lastMove = performance.now();
+    kick();
+  });
+  document.documentElement.addEventListener('mouseleave', () => { mouse.on = false; });
+
+  // ---------- Theme: off-white by default, dark slate over sections marked data-theme="dark" ----------
+  const themed = Array.from(document.querySelectorAll('main > section, .hero'));
+  let theme = 'light', themeQueued = false;
+  function updateTheme() {
+    themeQueued = false;
+    const mid = window.innerHeight / 2;
+    let next = 'light';
+    for (const el of themed) {
+      const r = el.getBoundingClientRect();
+      if (r.top <= mid && r.bottom > mid) { next = el.dataset.theme || 'light'; break; }
+    }
+    if (next !== theme) {
+      theme = next;
+      document.documentElement.dataset.theme = theme;
+      INK = theme === 'dark' ? '236,236,232' : '21,21,21';
+      kick();
+    }
+  }
+  window.addEventListener('scroll', () => {
+    if (!themeQueued) { themeQueued = true; requestAnimationFrame(updateTheme); }
+    kick();
+  }, { passive: true });
+
+  // ---------- Fit the name across the full width ----------
+  const nameEl = document.getElementById('name');
+  function fitName() {
+    nameEl.style.fontSize = '100px';
+    const avail = hero.clientWidth - parseFloat(getComputedStyle(hero).paddingLeft) * 2;
+    nameEl.style.fontSize = (100 * avail / nameEl.scrollWidth * 0.985) + 'px';
+  }
+  function layout() { sizeBg(); fitName(); updateTheme(); kick(); }
+  window.addEventListener('resize', layout);
+  layout();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitName);
+
+  // ---------- Santa Monica clock ----------
+  const clock = document.getElementById('clock');
+  function tick() {
+    clock.textContent = new Date().toLocaleTimeString('en-US', {
+      timeZone: 'America/Los_Angeles', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    });
+  }
+  tick(); setInterval(tick, 20000);
+
+  // ---------- Logo toggles the tabs (shuffled each time they open) ----------
+  const navcol = document.getElementById('navcol');
+  const nav = document.getElementById('nav');
+  const logo = document.getElementById('logo');
+  function setOpen(open) {
+    if (open) {
+      const links = Array.from(nav.children);
+      for (let i = links.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [links[i], links[j]] = [links[j], links[i]];
+      }
+      links.forEach(l => nav.appendChild(l));
+    }
+    navcol.classList.toggle('open', open);
+    logo.setAttribute('aria-expanded', open);
+  }
+  logo.addEventListener('click', () => setOpen(!navcol.classList.contains('open')));
+  nav.addEventListener('click', e => { if (e.target.tagName === 'A') setOpen(false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') setOpen(false); });
 </script>
 </body>
 </html>
